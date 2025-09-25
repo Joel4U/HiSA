@@ -1,0 +1,11 @@
+{
+  "json_flag": false,
+  "task": "onto5cn",
+  "ENT_CLS_NUM": 18,
+  "ent2id": {"NORP": 0, "ORG": 1, "PERSON":2, "DATE": 3, "GPE": 4, "FAC": 5, "CARDINAL": 6, "TIME": 7, "ORDINAL": 8, "EVENT": 9, 
+                  "QUANTITY": 10, "PERCENT": 11, "LOC": 12, "WORK_OF_ART": 13, "MONEY": 14, "LAW": 15, "PRODUCT": 16, "LANGUAGE": 17},
+  "deplabel2id": {"PER": 0, "ORG": 1, "LOC": 2, "GPE": 3, "FAC": 4, "VEH": 5, "WEA": 6},
+  "bert_name": "bert-chinese-based",
+  "bert_learning_rate": 2e-5,
+  "chunks_size": 242
+}

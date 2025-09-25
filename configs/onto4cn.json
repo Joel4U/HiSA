@@ -1,0 +1,10 @@
+{
+  "json_flag": false,
+  "task": "onto4cn",
+  "ENT_CLS_NUM": 7,
+  "ent2id":  {"LOC": 0, "PER": 1, "GPE":2, "ORG": 3},
+  "deplabel2id": {"PER": 0, "ORG": 1, "LOC": 2, "GPE": 3, "FAC": 4, "VEH": 5, "WEA": 6},
+  "bert_name": "bert-chinese-based",
+  "bert_learning_rate": 2e-5,
+  "chunks_size": 409
+}

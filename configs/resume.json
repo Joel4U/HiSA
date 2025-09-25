@@ -1,0 +1,13 @@
+{
+  "json_flag": false,
+  "task": "resume",
+  "ENT_CLS_NUM": 8,
+  "ent2id": {"NAME": 0, "CONT": 1, "RACE": 2, "TITLE": 3, "EDU": 4, "ORG": 5, "PRO": 6, "LOC": 7}, 
+  "deplabel2id": {"nsubj": 0, "flat:name": 1, "punct": 2, "appos": 3, "compound": 4, "nmod": 5, "root": 6, "conj": 7, "obj": 8, "nummod": 9, "nmod:tmod": 10, "acl": 11, "parataxis": 12, "flat:foreign": 13, "amod": 14, "clf": 15, "cc": 16, "advmod": 17, "case": 18, "advcl": 19, "xcomp": 20, "mark": 21, "obl": 22, "csubj": 23, "det": 24, "ccomp": 25, "aux": 26, "mark:rel": 27, "aux:pass": 28, "acl:relcl": 29, "cop": 30, "dislocated": 31, "nsubj:pass": 32, "discourse": 33}, 
+  "bert_name": "bert-chinese-based",
+  "bert_learning_rate": 2e-5,
+  "chunks_size": 178,
+  "batch_size": 8,
+  "n_epochs": 30,
+  "device": 0
+}

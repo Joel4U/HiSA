@@ -1,0 +1,14 @@
+{
+  "json_flag": false,
+  "task": "sample-conll03",
+  "ENT_CLS_NUM": 4,
+  "ent2id": {"LOC": 0, "PER": 1, "MISC":2, "ORG": 3},
+  "deplabel2id": {"nsubj": 0, "root": 1, "amod": 2, "obj": 3, "mark": 4, "advcl": 5, "punct": 6, "flat": 7, "list": 8, "det": 9, "case": 10, "obl": 11, "ccomp": 12, "nmod": 13, "compound": 14, "nsubj:pass": 15, "aux": 16, "aux:pass": 17, "nmod:poss": 18, "appos": 19, "cop": 20, "advmod": 21, "iobj": 22, "cc": 23, "expl": 24, "conj": 25, "nmod:tmod": 26, "acl": 27, "xcomp": 28, "obl:tmod": 29, "acl:relcl": 30, "nsubj:outer": 31, "nummod": 32, "parataxis": 33, "compound:prt": 34, "discourse": 35, "obl:agent": 36, "fixed": 37, "obl:npmod": 38, "nmod:npmod": 39, "dep": 40, "csubj": 41, "cc:preconj": 42, "vocative": 43, "det:predet": 44, "dislocated": 45, "advcl:relcl": 46, "nmod:desc": 47, "orphan": 48, "csubj:outer": 49, "reparandum": 50}, 
+  "id2deplabel": {"0": "nsubj", "1": "root", "2": "amod", "3": "obj", "4": "mark", "5": "advcl", "6": "punct", "7": "flat", "8": "list", "9": "det", "10": "case", "11": "obl", "12": "ccomp", "13": "nmod", "14": "compound", "15": "nsubj:pass", "16": "aux", "17": "aux:pass", "18": "nmod:poss", "19": "appos", "20": "cop", "21": "advmod", "22": "iobj", "23": "cc", "24": "expl", "25": "conj", "26": "nmod:tmod", "27": "acl", "28": "xcomp", "29": "obl:tmod", "30": "acl:relcl", "31": "nsubj:outer", "32": "nummod", "33": "parataxis", "34": "compound:prt", "35": "discourse", "36": "obl:agent", "37": "fixed", "38": "obl:npmod", "39": "nmod:npmod", "40": "dep", "41": "csubj", "42": "cc:preconj", "43": "vocative", "44": "det:predet", "45": "dislocated", "46": "advcl:relcl", "47": "nmod:desc", "48": "orphan", "49": "csubj:outer", "50": "reparandum"}, 
+  "bert_name": "roberta-base",
+  "bert_learning_rate": 2e-5,
+  "n_head": 4,
+  "batch_size": 8,
+  "n_epochs": 30,
+  "device": 0
+}

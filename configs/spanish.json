@@ -1,0 +1,14 @@
+{
+  "json_flag": false,
+  "task": "spanish",
+  "ENT_CLS_NUM": 4,
+  "ent2id": {"loc": 0, "person": 1, "misc":2, "org": 3},
+  "deplabel2id": {"spec": 0, "suj": 1, "s.a": 2, "sn": 3, "f": 4, "root": 5, "cc": 6, "cd": 7, "sp": 8, "S": 9, "cag": 10, "ci": 11, "conj": 12, "v": 13, "s": 14, "mod": 15, "infinitiu": 16, "creg": 17, "coord": 18, "morfema.pronominal": 19, "grup.nom": 20, "cpred": 21, "atr": 22, "inc": 23, "d": 24, "ao": 25, "sadv": 26, "relatiu": 27, "sa": 28, "z": 29, "r": 30, "et": 31, "pass": 32, "grup.a": 33, "impers": 34, "a": 35, "c": 36, "morfema.verbal": 37, "neg": 38, "n": 39, "interjeccio": 40, "grup.adv": 41, "p": 42, "w": 43, "participi": 44, "prep": 45, "gerundi": 46, "espec": 47, "grup.verb": 48, "i": 49}, 
+  "id2deplabel": {"0": "spec", "1": "suj", "2": "s.a", "3": "sn", "4": "f", "5": "root", "6": "cc", "7": "cd", "8": "sp", "9": "S", "10": "cag", "11": "ci", "12": "conj", "13": "v", "14": "s", "15": "mod", "16": "infinitiu", "17": "creg", "18": "coord", "19": "morfema.pronominal", "20": "grup.nom", "21": "cpred", "22": "atr", "23": "inc", "24": "d", "25": "ao", "26": "sadv", "27": "relatiu", "28": "sa", "29": "z", "30": "r", "31": "et", "32": "pass", "33": "grup.a", "34": "impers", "35": "a", "36": "c", "37": "morfema.verbal", "38": "neg", "39": "n", "40": "interjeccio", "41": "grup.adv", "42": "p", "43": "w", "44": "participi", "45": "prep", "46": "gerundi", "47": "espec", "48": "grup.verb", "49": "i"}, 
+  "bert_name": "bert-mulitilan-base",
+  "bert_learning_rate": 2e-5,
+  "chunks_size": 118,
+  "batch_size": 8,
+  "n_epochs": 30,
+  "device": 0
+}

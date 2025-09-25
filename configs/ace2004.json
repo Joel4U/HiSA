@@ -1,0 +1,10 @@
+{
+  "json_flag": true,
+  "task": "ace2004",
+  "ENT_CLS_NUM": 7,
+  "ent2id": {"PER": 0, "ORG": 1, "LOC": 2, "GPE": 3, "FAC": 4, "VEH": 5, "WEA": 6},
+  "deplabel2id": {"PER": 0, "ORG": 1, "LOC": 2, "GPE": 3, "FAC": 4, "VEH": 5, "WEA": 6},
+  "bert_name": "roberta-base",
+  "bert_learning_rate": 2e-5,
+  "chunks_size": 120
+}

@@ -1,0 +1,14 @@
+{
+  "json_flag": true,
+  "task": "genia",
+  "ENT_CLS_NUM": 5,
+  "ent2id": {"DNA": 0, "RNA": 1, "cell_type": 2, "protein": 3, "cell_line": 4},
+  "deplabel2id": {"nsubj": 0, "case": 1, "det": 2, "compound": 3, "nmod": 4, "root": 5, "amod": 6, "obj": 7, "acl": 8, "obl": 9, "punct": 10, "appos": 11, "cc": 12, "conj": 13, "mark": 14, "ccomp": 15, "nsubj:pass": 16, "aux:pass": 17, "acl:relcl": 18, "xcomp": 19, "obl:agent": 20, "aux": 21, "cop": 22, "nummod": 23, "advmod": 24, "dep": 25, "advcl": 26, "cc:preconj": 27, "nmod:poss": 28, "fixed": 29, "nmod:tmod": 30, "obl:npmod": 31, "parataxis": 32, "flat": 33, "nsubj:outer": 34, "compound:prt": 35, "expl": 36, "csubj:pass": 37, "discourse": 38, "nmod:npmod": 39, "csubj": 40, "det:predet": 41, "obl:tmod": 42, "advcl:relcl": 43, "iobj": 44, "reparandum": 45, "orphan": 46, "flat:foreign": 47, "list": 48, "vocative": 49}, 
+  "id2deplabel": {"0": "nsubj", "1": "case", "2": "det", "3": "compound", "4": "nmod", "5": "root", "6": "amod", "7": "obj", "8": "acl", "9": "obl", "10": "punct", "11": "appos", "12": "cc", "13": "conj", "14": "mark", "15": "ccomp", "16": "nsubj:pass", "17": "aux:pass", "18": "acl:relcl", "19": "xcomp", "20": "obl:agent", "21": "aux", "22": "cop", "23": "nummod", "24": "advmod", "25": "dep", "26": "advcl", "27": "cc:preconj", "28": "nmod:poss", "29": "fixed", "30": "nmod:tmod", "31": "obl:npmod", "32": "parataxis", "33": "flat", "34": "nsubj:outer", "35": "compound:prt", "36": "expl", "37": "csubj:pass", "38": "discourse", "39": "nmod:npmod", "40": "csubj", "41": "det:predet", "42": "obl:tmod", "43": "advcl:relcl", "44": "iobj", "45": "reparandum", "46": "orphan", "47": "flat:foreign", "48": "list", "49": "vocative"}, "label2id": {"protein": 0, "cell_type": 1, "DNA": 2, "cell_line": 3, "RNA": 4},
+  "bert_name": "biobert-base-cased",
+  "bert_learning_rate": 2e-5,
+  "n_head": 4,
+  "batch_size": 8,
+  "n_epochs": 20,
+  "device": 3
+}
