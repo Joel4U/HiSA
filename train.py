@@ -1,19 +1,19 @@
-from utils.data_loader import EntDataset
-from utils.data_utils import load_data
-from utils.config import Config
+from src.utils.data_loader import EntDataset
+from src.utils.data_utils import load_data, move_to_device
+from src.utils.config import Config#, CudaTimer
 from transformers import AutoTokenizer, BertModel, RobertaModel
 from torch.utils.data import DataLoader
 import torch
 import json
-from models.model import CNNNer
-from utils.metrics import MetricsCalculator
+from src.models.model import SpanAttn
+from src.utils.metrics import MetricsCalculator
 from tqdm import tqdm
-from utils.logger import logger
+from src.utils.logger import logger
 from transformers import set_seed
 import argparse
 from transformers import get_linear_schedule_with_warmup
 import gc
-
+import pickle
 import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -36,36 +36,31 @@ def main(args, seed, max_len = 512):
 
     weight_decay = 1e-2
     ent_thres = 0.5
-
+    non_ptm_lr_ratio = 5
     set_seed(seed)
 
     tokenizer = AutoTokenizer.from_pretrained(args.bert_name, add_prefix_space=True, use_fast=True)
-
-    ner_train = EntDataset(train_path, tokenizer=tokenizer, deplabel2id=args.deplabel2id, ent2id=args.ent2id, 
-                           model_name=args.bert_name, max_len=max_len, json=args.json_flag)
-    ner_dev = EntDataset(dev_path, tokenizer=tokenizer, deplabel2id=args.deplabel2id, ent2id=args.ent2id, 
-                         model_name=args.bert_name, max_len=max_len, is_train=False, json=args.json_flag)
-    ner_test = EntDataset(test_path, tokenizer=tokenizer, deplabel2id=args.deplabel2id, ent2id=args.ent2id, 
-                          model_name=args.bert_name, max_len=max_len, is_train=False, json=args.json_flag)
+    # ner_train, ner_dev, ner_test = load_cached_datasets(args)
+    ner_train = EntDataset(train_path, tokenizer=tokenizer, postag2id=args.postag2id, deplabel2id=args.deplabel2id, ent2id=args.ent2id, 
+                           model_name=args.bert_name, max_span_width=args.max_span_width, max_len=max_len, json=args.json_flag)
+    ner_dev = EntDataset(dev_path, tokenizer=tokenizer, postag2id=args.postag2id, deplabel2id=args.deplabel2id, ent2id=args.ent2id, 
+                         model_name=args.bert_name, max_span_width=args.max_span_width, max_len=max_len, is_train=False, json=args.json_flag)
+    ner_test = EntDataset(test_path, tokenizer=tokenizer, postag2id=args.postag2id, deplabel2id=args.deplabel2id, ent2id=args.ent2id, 
+                          model_name=args.bert_name, max_span_width=args.max_span_width, max_len=max_len, is_train=False, json=args.json_flag)
 
     # 使用标准DataLoader
-    ner_loader_train = DataLoader(ner_train, batch_size=args.batch_size, collate_fn=ner_train.collate, shuffle=True, num_workers=2)
-    ner_loader_dev = DataLoader(ner_dev, batch_size=args.batch_size, collate_fn=ner_dev.collate, shuffle=False, num_workers=2)
-    ner_loader_test = DataLoader(ner_test, batch_size=args.batch_size, collate_fn=ner_test.collate, shuffle=False, num_workers=2)
+    ner_loader_train = DataLoader(ner_train, batch_size=args.batch_size, collate_fn=ner_train.collate, shuffle=True, num_workers=4, pin_memory=True)
+    ner_loader_dev = DataLoader(ner_dev, batch_size=args.batch_size, collate_fn=ner_dev.collate, shuffle=False, num_workers=4, pin_memory=True)
+    ner_loader_test = DataLoader(ner_test, batch_size=args.batch_size, collate_fn=ner_test.collate, shuffle=False, num_workers=4, pin_memory=True)
     dev_example = load_data(dev_path, args.ent2id, args.json_flag)
     test_example = load_data(test_path, args.ent2id, args.json_flag)
 
     device = torch.device(f'cuda:{args.device}' if torch.cuda.is_available() and int(args.device)>=0 else 'cpu')
     print(f"Using device: {device}")
 
-    # if 'roberta' in args.bert_name:
-    #     encoder = RobertaModel.from_pretrained(args.bert_name)
-    # elif 'bert' in args.bert_name:
-    #     encoder = BertModel.from_pretrained(args.bert_name)
-
-    model = CNNNer(args.bert_name, num_rel_tag=len(args.deplabel2id), num_ner_tag=args.ENT_CLS_NUM, cnn_dim=args.cnn_dim, 
-                   biaffine_size=args.biaffine_size, size_embed_dim=args.size_embed_dim, logit_drop=args.logit_drop,
-                   n_head=config.n_head, cnn_depth=args.cnn_depth, attn_dropout=0.2).to(device) # cuda()
+    model = SpanAttn(args.bert_name, num_rel_tag=len(args.deplabel2id), num_ner_tag=args.ENT_CLS_NUM,
+                   hidden_dim=args.hidden_dim, biaffine_size=args.biaffine_size, size_embed_dim=args.size_embed_dim, logit_drop=args.logit_drop,
+                   n_head=config.n_head, num_span_attn_layers=args.num_span_attn_layers, max_span_width=args.max_span_width).to(device) # cuda()
     
     for n, p in model.named_parameters():
         # if 'pretrain_model' not in n:
@@ -82,38 +77,60 @@ def main(args, seed, max_len = 512):
     logger.info(sum(counter.values()))
 
     # 优化器设置 - 全量微调版本
-    def set_optimizer(model):
-        ln_params = []
-        non_ln_params = []
-        non_pretrain_params = []
-        non_pretrain_ln_params = []
-        
+    def set_optimizer(model):     
+        pretrain_params = []           # BERT权重
+        pretrain_norm_params = []      # BERT的LayerNorm/bias
+        task_params = []               # 任务层权重
+        task_norm_params = []          # 任务层的LayerNorm/GroupNorm/bias
+        special_params = []            # gamma, alpha等特殊参数
+
         for name, param in model.named_parameters():
             name = name.lower()
             if not param.requires_grad:
                 continue
+            # ===== 分组逻辑 =====
+            # 1. 识别预训练模型部分（根据实际的PLMEmbedder实现调整）
+            is_pretrain = any(key in name.lower() for key in ['embedder', 'encoder', 'bert', 'roberta', 'electra'])
             
-            # 区分预训练部分和任务特定部分
-            if 'encoder' in name:  # BERT编码器部分
-                if 'norm' in name or 'bias' in name:
-                    ln_params.append(param)
-                else:
-                    non_ln_params.append(param)
-            else:  # CNN和分类器部分
-                if 'norm' in name or 'bias' in name:
-                    non_pretrain_ln_params.append(param)
-                else:
-                    non_pretrain_params.append(param)
+            # 2. 识别normalization层和bias
+            is_norm_or_bias = any(key in name.lower() for key in [
+                'norm',           # LayerNorm, GroupNorm, BatchNorm
+                'bias',           # 所有bias
+                '.ln.',           # 可能的LayerNorm命名
+                'layernorm'
+            ])
+            
+            # 3. 识别特殊参数（gamma, alpha, temperature等）
+            # is_special = any(key in name.lower() for key in [
+            #     'gamma',
+            #     'alpha',
+            #     'temperature',
+            #     'beta'  # 如果有的话
+            # ]) and param.numel() < 100  # 通常这些参数很小
         
+            # ===== 分配到对应组 =====
+            # if is_special:
+            #     special_params.append(param)
+            if is_pretrain:
+                if is_norm_or_bias:
+                    pretrain_norm_params.append(param)
+                else:
+                    pretrain_params.append(param)
+            else:  # 任务特定层
+                if is_norm_or_bias:
+                    task_norm_params.append(param)
+                else:
+                    task_params.append(param)
         # 不同部分使用不同学习率
         optimizer_grouped_parameters = [
-            {'params': non_ln_params, 'lr': args.lr, 'weight_decay': weight_decay},  # BERT权重
-            {'params': ln_params, 'lr': args.lr, 'weight_decay': 0},                # BERT LayerNorm/bias
-            {'params': non_pretrain_ln_params, 'lr': args.lr, 'weight_decay': 0},  # 任务层LayerNorm/bias
-            {'params': non_pretrain_params, 'lr': args.lr, 'weight_decay': weight_decay},  # 任务层权重
+            {'params': pretrain_params, 'lr': args.lr, 'weight_decay': weight_decay, 'name': 'pretrain_params'},    # BERT权重
+            {'params': pretrain_norm_params, 'lr': args.lr, 'weight_decay': 0, 'name': 'pretrain_params'},               # BERT LayerNorm/bias
+            {'params': task_params, 'lr': args.lr * non_ptm_lr_ratio, 'weight_decay': weight_decay},                  # 任务层LayerNorm/bias
+            {'params': task_norm_params, 'lr': args.lr * non_ptm_lr_ratio, 'weight_decay': 0},                             # 任务层权重
+            # {'params': special_params,'lr': args.lr * (non_ptm_lr_ratio / 2),  'weight_decay': 0.0, 'name': 'special_params'}, # 中等学习率
         ]
         
-        optimizer = torch.optim.AdamW(optimizer_grouped_parameters)
+        optimizer = torch.optim.AdamW(optimizer_grouped_parameters, betas=(0.9, 0.999), eps=1e-8)
         return optimizer
 
     optimizer = set_optimizer(model)
@@ -123,17 +140,17 @@ def main(args, seed, max_len = 512):
     metrics = MetricsCalculator(ent_thres=ent_thres, id2ent=id2ent, allow_nested=True)
     best_dev_f1, best_test_f1 = 0.0, 0.0
     best_epoch, patience_counter = 0, 0
-
     for eo in range(args.n_epochs):
         loss_total = 0
         n_item = 0
         model.train()
+        
         for idx, batch in tqdm(enumerate(ner_loader_train), desc="Training", total=len(ner_loader_train)):
-            input_ids, attention_mask, orig_to_tok_index, span_head_matrix, rels, matrix = batch
-            input_ids, attention_mask, orig_to_tok_index, matrix, span_head_matrix, rels = input_ids.to(device), attention_mask.to(device), orig_to_tok_index.to(device), matrix.to(device), span_head_matrix.to(device), rels.to(device)
+            batch = move_to_device(batch, device, non_blocking=True)
+            input_ids, attention_mask, orig_to_tok_index, heads, rels, precomputed, matrix = batch
             # 标准PyTorch训练流程
             optimizer.zero_grad()
-            loss = model(input_ids, attention_mask, orig_to_tok_index, rels, span_head_matrix, matrix)
+            loss = model(input_ids, attention_mask, orig_to_tok_index, heads, rels, precomputed, matrix)
             loss.backward()
             # 梯度裁剪
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
@@ -208,9 +225,9 @@ def evaluate_dataset(model, data_loader, examples, dataset_name, epoch, device, 
     pre, word_lens = [], []
     
     for batch in tqdm(data_loader, desc=dataset_name):
-        input_ids, attention_mask, orig_to_tok_index, span_head_matrix, rels = batch
-        input_ids, attention_mask, orig_to_tok_index, span_head_matrix, rels = input_ids.to(device), attention_mask.to(device), orig_to_tok_index.to(device), span_head_matrix.to(device), rels.to(device)
-        logits = model(input_ids, attention_mask, orig_to_tok_index, rels, span_head_matrix)
+        batch = move_to_device(batch, device, non_blocking=True)
+        input_ids, attention_mask, orig_to_tok_index, heads, rels, precomputed = batch
+        logits = model(input_ids, attention_mask, orig_to_tok_index, heads, rels, precomputed)
         pre += logits
         actual_lengths = (orig_to_tok_index > 0).sum(dim=-1)  # [batch_size]
         word_lens += actual_lengths.cpu().tolist()
@@ -239,9 +256,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=str, default="conll03")
     parser.add_argument('--warmup', default=0.1, type=float)
-    parser.add_argument('--cnn_depth', default=0, type=int)
-    parser.add_argument('--cnn_dim', default=200, type=int)
-    parser.add_argument('--size_embed_dim', default=25, type=int)
+    parser.add_argument('--num_span_attn_layers', default=1, type=int)
+    parser.add_argument('--hidden_dim', default=200, type=int)
+    parser.add_argument('--size_embed_dim', default=30, type=int)
     parser.add_argument('--logit_drop', default=0.1, type=float)
     parser.add_argument('--biaffine_size', default=200, type=int)
 
@@ -250,7 +267,7 @@ if __name__ == '__main__':
     args.config = f'./configs/{args.task}.json'
     config = Config(args)
 
-    seed = random.sample(range(40,50),3)
+    seed = random.sample(range(10,50),3)
     # seed = [13, 42, 43]
     logger.info('seed: {}'.format(seed))
     max_len = 512
